@@ -12,13 +12,14 @@ namespace CoolTestStuff
     public class SystemUnderTest<TSut>
         where TSut : class
     {
-        private List<RegisteredMock> mocks;
+        private List<RegisteredMock> systemUnderTestMocks;
         private List<SpecificDependency> specifiedDependencies;
         private Lazy<Mock<TSut>> targetFake;
+        private IFixture autoMockingObjectBuilder;
+        private IFixture objectBuilder;
 
         protected Mock<TSut> TargetFake => targetFake.Value;
         protected TSut Target => TargetFake.Object;
-        protected IFixture AutoFixture { get; set; }
 
         [OneTimeSetUp]
         protected void PerRunSetup()
@@ -35,17 +36,14 @@ namespace CoolTestStuff
         [SetUp]
         protected void PerTestSetup()
         {
-            AutoFixture = new Fixture()
-                .Customize(new AutoMoqCustomization());
+            objectBuilder = CreateFixture();
 
-            AutoFixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
-                .ForEach(b => AutoFixture.Behaviors.Remove(b));
-
-            AutoFixture.Behaviors.Add(new OmitOnRecursionBehavior());
+            autoMockingObjectBuilder = CreateFixture();
+            autoMockingObjectBuilder.Customize(new AutoMoqCustomization());
 
             specifiedDependencies = new List<SpecificDependency>();
 
-            mocks = new List<RegisteredMock>();
+            systemUnderTestMocks = new List<RegisteredMock>();
 
             targetFake = new Lazy<Mock<TSut>>(
                 () =>
@@ -63,9 +61,14 @@ namespace CoolTestStuff
             DoPerTestTearDown();
         }
 
+        protected T CreateAnAutoMocked<T>()
+        {
+            return autoMockingObjectBuilder.Create<T>();
+        }
+
         protected T CreateA<T>()
         {
-            return AutoFixture.Create<T>();
+            return objectBuilder.Create<T>();
         }
 
         protected virtual void DoPerRunSetUp() { }
@@ -81,7 +84,7 @@ namespace CoolTestStuff
             // in order to get a Mock, then the actual TargetMock needs to be created with all its parameters
             ForceCreationOfLazySystemUnderTest();
 
-            return (Mock<TDependency>)mocks.First(m => m.TypeThatHasBeenMocked == typeof(TDependency)).Mock;
+            return (Mock<TDependency>)systemUnderTestMocks.First(m => m.TypeThatHasBeenMocked == typeof(TDependency)).Mock;
         }
 
         protected Mock<TDependency> GetInjectedMock<TDependency>(string name) where TDependency : class
@@ -89,7 +92,7 @@ namespace CoolTestStuff
             // in order to get a Mock, then the actual TargetMock needs to be created with all its parameters
             ForceCreationOfLazySystemUnderTest();
 
-            return (Mock<TDependency>)mocks.First(m => m.TypeThatHasBeenMocked == typeof(TDependency) && m.NameOfMockInstance == name).Mock;
+            return (Mock<TDependency>)systemUnderTestMocks.First(m => m.TypeThatHasBeenMocked == typeof(TDependency) && m.NameOfMockInstance == name).Mock;
         }
 
         protected Mock<T> GetMockAt<T>(T mockReference) where T : class
@@ -131,7 +134,7 @@ namespace CoolTestStuff
                 if (CanBeMocked(param.ParameterType))
                 {
                     var mockInstance = CreateMock(param.ParameterType);
-                    mocks.Add(
+                    systemUnderTestMocks.Add(
                         new RegisteredMock
                         {
                             Mock = mockInstance,
@@ -176,6 +179,16 @@ namespace CoolTestStuff
         private static object GetDefault(Type type)
             => type.IsValueType ? Activator.CreateInstance(type) : null;
 
+        private IFixture CreateFixture()
+        {
+            var fixture = new Fixture();
+            fixture.Behaviors.OfType<ThrowingRecursionBehavior>()
+                ?.ToList()
+                ?.ForEach(b => autoMockingObjectBuilder?.Behaviors?.Remove(b));
+            fixture.Behaviors.Add(new OmitOnRecursionBehavior());
+
+            return fixture;
+        }
 
         private class RegisteredMock
         {
