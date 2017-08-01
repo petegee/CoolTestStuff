@@ -224,8 +224,8 @@ namespace CoolTestStuff
         {
             return specifiedDependencies
                 .FirstOrDefault(
-                    o => 
-                        paramInfo.ParameterType.IsAssignableFrom(o.Instance.GetType()) && 
+                    o =>
+                        paramInfo.ParameterType.IsInstanceOfType(o.Instance) &&
                         paramInfo.Name == (o.ConstructorParameterName ?? paramInfo.Name));
         }
 
@@ -251,8 +251,8 @@ namespace CoolTestStuff
         {
             var fixture = new Fixture();
             fixture.Behaviors.OfType<ThrowingRecursionBehavior>()
-                ?.ToList()
-                ?.ForEach(b => autoMockingObjectBuilder?.Behaviors?.Remove(b));
+                .ToList()
+                .ForEach(b => autoMockingObjectBuilder?.Behaviors?.Remove(b));
             fixture.Behaviors.Add(new OmitOnRecursionBehavior());
 
             return fixture;
