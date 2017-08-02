@@ -20,6 +20,11 @@ namespace CoolTestStuff
             specifiedDependencies = specificInstances;
         }
 
+        public Mock<TSut> BuildFake()
+        {
+            return new Mock<TSut>(GetMostSpecialisedConstructorParameterValues());
+        }
+
         private object[] GetMostSpecialisedConstructorParameterValues()
         {
             var constructorValues = new List<object>();
