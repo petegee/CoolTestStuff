@@ -5,7 +5,6 @@ using Ploeh.AutoFixture.AutoMoq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 
 namespace CoolTestStuff
 {
@@ -20,11 +19,11 @@ namespace CoolTestStuff
     public class SystemUnderTest<TSut>
         where TSut : class
     {
-        private List<RegisteredMock> systemUnderTestMocks;
-        private List<SpecificDependency> specifiedDependencies;
+        private List<KeyValuePair<string, object>> specifiedDependencies;
         private Lazy<Mock<TSut>> targetFake;
         private IFixture autoMockingObjectBuilder;
         private IFixture objectBuilder;
+        private FakeObjectBuilder fakeBuilder;
 
         /// <summary>
         /// The SUT test-target fake. Use this to set up partial-mock
@@ -57,19 +56,18 @@ namespace CoolTestStuff
             autoMockingObjectBuilder = CreateFixture();
             autoMockingObjectBuilder.Customize(new AutoMoqCustomization());
 
-            specifiedDependencies = new List<SpecificDependency>();
-
-            systemUnderTestMocks = new List<RegisteredMock>();
+            specifiedDependencies = new List<KeyValuePair<string, object>>();
 
             // We build the targetFake class as late as possible to all people to use
             // the InjectTargetWith() method to provide custom instances.
             targetFake = new Lazy<Mock<TSut>>(
                 () =>
+                {
                     // lazily build the SUT/Fake...
-                    new Mock<TSut>(GetMostSpecialisedConstructorParameterValues())
-                    {
-                        CallBase = true
-                    });
+                    fakeBuilder = new FakeObjectBuilder();
+                    return fakeBuilder.BuildFake<TSut>(true, specifiedDependencies);
+                });
+                   
 
             DoPerTestSetUp();
         }
@@ -120,6 +118,17 @@ namespace CoolTestStuff
         }
 
         /// <summary>
+        /// Create an instance of T which is a Fake T (eg a Mock.Object)
+        /// </summary>
+        protected T CreateAFake<T>(bool callBaseImplementation = true, List<KeyValuePair<string, object>> specifiedInstances = null) where T : class
+        {
+            return
+                specifiedInstances == null
+                    ? new FakeObjectBuilder().BuildFake<T>().Object
+                    : new FakeObjectBuilder().BuildFake<T>(callBaseImplementation, specifiedInstances).Object;
+        }
+
+        /// <summary>
         /// Get a Mock which was injected into the SUT (injected via its CTOR) instance.
         /// </summary>
         protected Mock<TDependency> GetInjectedMock<TDependency>() where TDependency : class
@@ -127,7 +136,7 @@ namespace CoolTestStuff
             // in order to get a Mock, then the actual TargetMock needs to be created with all its parameters
             ForceCreationOfLazySystemUnderTest();
 
-            return (Mock<TDependency>)systemUnderTestMocks.First(m => m.TypeThatHasBeenMocked == typeof(TDependency)).Mock;
+            return fakeBuilder.GetInjectedMock<TDependency>();
         }
 
         /// <summary>
@@ -140,7 +149,7 @@ namespace CoolTestStuff
             // in order to get a Mock, then the actual TargetMock needs to be created with all its parameters
             ForceCreationOfLazySystemUnderTest();
 
-            return (Mock<TDependency>)systemUnderTestMocks.First(m => m.TypeThatHasBeenMocked == typeof(TDependency) && m.NameOfMockInstance == name).Mock;
+            return fakeBuilder.GetInjectedMock<TDependency>(name);
         }
 
         /// <summary>
@@ -158,7 +167,7 @@ namespace CoolTestStuff
         /// </summary>
         protected void InjectTargetWith<T>(T instance) where T : class
         {
-            specifiedDependencies.Add(new SpecificDependency { Instance = instance });
+            specifiedDependencies.Add(new KeyValuePair<string, object>(null, instance));
         }
 
         /// <summary>
@@ -170,7 +179,7 @@ namespace CoolTestStuff
         /// </summary>
         protected void InjectTargetWith<T>(T instance, string ctorParameterName) where T : class
         {
-            specifiedDependencies.Add(new SpecificDependency { Instance = instance, ConstructorParameterName = ctorParameterName });
+            specifiedDependencies.Add(new KeyValuePair<string, object>(ctorParameterName, instance));
         }
 
         /// <summary>
@@ -187,66 +196,6 @@ namespace CoolTestStuff
             var iexistOnlyToForceTheCreationOfTheSystemUnderTest = targetFake.Value;
         }
 
-        private object[] GetMostSpecialisedConstructorParameterValues()
-        {
-            var constructorValues = new List<object>();
-            foreach (var param in GetMostSpecialisedConstructor().GetParameters())
-            {
-                var specifiedDependency = GetSpecifiedInstance(param);
-                if (specifiedDependency != null)
-                {
-                    constructorValues.Add(specifiedDependency.Instance);
-                    continue;
-                }
-
-                if (CanBeMocked(param.ParameterType))
-                {
-                    var mockInstance = CreateMock(param.ParameterType);
-                    systemUnderTestMocks.Add(
-                        new RegisteredMock
-                        {
-                            Mock = mockInstance,
-                            TypeThatHasBeenMocked = param.ParameterType,
-                            NameOfMockInstance = param.Name
-                        });
-
-                    constructorValues.Add(mockInstance.Object);
-                    continue;
-                }
-
-                constructorValues.Add(GetDefault(param.ParameterType));
-            }
-
-            return constructorValues.ToArray();
-        }
-
-        private SpecificDependency GetSpecifiedInstance(ParameterInfo paramInfo)
-        {
-            return specifiedDependencies
-                .FirstOrDefault(
-                    o =>
-                        paramInfo.ParameterType.IsInstanceOfType(o.Instance) &&
-                        paramInfo.Name == (o.ConstructorParameterName ?? paramInfo.Name));
-        }
-
-        private static bool CanBeMocked(Type dependencyType) 
-            => dependencyType.IsClass || dependencyType.IsInterface;
-
-        private static ConstructorInfo GetMostSpecialisedConstructor()
-        {
-            var allCtors = typeof(TSut).GetConstructors();
-            var maxParams = allCtors.Max(ctor => ctor.GetParameters().Length);
-            return allCtors.Single(ctor => ctor.GetParameters().Length == maxParams);
-        }
-
-        private static Mock CreateMock(Type dependencyType)
-            => (Mock)typeof(Mock<>).MakeGenericType(dependencyType)
-                    .GetConstructor(new Type[0])
-                    ?.Invoke(new object[0]);
-
-        private static object GetDefault(Type type)
-            => type.IsValueType ? Activator.CreateInstance(type) : null;
-
         private IFixture CreateFixture()
         {
             var fixture = new Fixture();
@@ -258,17 +207,5 @@ namespace CoolTestStuff
             return fixture;
         }
 
-        private class RegisteredMock
-        {
-            public Type TypeThatHasBeenMocked { get; set; }
-            public string NameOfMockInstance { get; set; }
-            public Mock Mock { get; set; }
-        }
-
-        private class SpecificDependency
-        {
-            public string ConstructorParameterName { get; set; }
-            public object Instance { get; set; }
-        }
     }
 }
