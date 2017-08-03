@@ -37,29 +37,8 @@
     <Reference Include="Moq, Version=4.7.99.0, Culture=neutral, PublicKeyToken=69f491c39445e920, processorArchitecture=MSIL">
       <HintPath>..\packages\Moq.4.7.99\lib\net45\Moq.dll</HintPath>
     </Reference>
-    <Reference Include="nunit.core.interfaces, Version=2.6.2.12296, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
-      <HintPath>..\packages\AutoFixture.NUnit2.3.50.3\lib\net40\nunit.core.interfaces.dll</HintPath>
-    </Reference>
     <Reference Include="nunit.framework, Version=3.7.1.0, Culture=neutral, PublicKeyToken=2638cd05610744eb, processorArchitecture=MSIL">
       <HintPath>..\packages\NUnit.3.7.1\lib\net45\nunit.framework.dll</HintPath>
-    </Reference>
-    <Reference Include="Ploeh.AutoFixture, Version=3.50.0.0, Culture=neutral, PublicKeyToken=b24654c590009d4f, processorArchitecture=MSIL">
-      <HintPath>..\packages\AutoFixture.3.50.3\lib\net40\Ploeh.AutoFixture.dll</HintPath>
-    </Reference>
-    <Reference Include="Ploeh.AutoFixture.AutoMoq, Version=3.50.0.0, Culture=neutral, PublicKeyToken=b24654c590009d4f, processorArchitecture=MSIL">
-      <HintPath>..\packages\AutoFixture.AutoMoq.3.50.3\lib\net40\Ploeh.AutoFixture.AutoMoq.dll</HintPath>
-    </Reference>
-    <Reference Include="Ploeh.AutoFixture.NUnit2, Version=3.50.0.0, Culture=neutral, PublicKeyToken=b24654c590009d4f, processorArchitecture=MSIL">
-      <HintPath>..\packages\AutoFixture.NUnit2.3.50.3\lib\net40\Ploeh.AutoFixture.NUnit2.dll</HintPath>
-    </Reference>
-    <Reference Include="Ploeh.AutoFixture.NUnit2.Addins, Version=3.50.0.0, Culture=neutral, PublicKeyToken=b24654c590009d4f, processorArchitecture=MSIL">
-      <HintPath>..\packages\AutoFixture.NUnit2.3.50.3\lib\net40\Ploeh.AutoFixture.NUnit2.Addins.dll</HintPath>
-    </Reference>
-    <Reference Include="Ploeh.AutoFixture.NUnit3, Version=3.50.0.0, Culture=neutral, PublicKeyToken=b24654c590009d4f, processorArchitecture=MSIL">
-      <HintPath>..\packages\AutoFixture.NUnit3.3.50.3\lib\net40\Ploeh.AutoFixture.NUnit3.dll</HintPath>
-    </Reference>
-    <Reference Include="Struik.AutoFixture.AutoMoq.AutoSetup, Version=1.3.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\AutoFixture.AutoMoq.AutoSetup.1.3.0.0\lib\net40\Struik.AutoFixture.AutoMoq.AutoSetup.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -72,7 +51,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="FakeObjectBuilder.cs" />
-    <Compile Include="LocalAddin.cs" />
     <Compile Include="SystemUnderTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

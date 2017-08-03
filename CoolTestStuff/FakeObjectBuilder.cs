@@ -6,21 +6,27 @@ using System.Reflection;
 
 namespace CoolTestStuff
 {
-    /// <summary>
-    /// Builds a Fake version of 
-    /// </summary>
-    public class FakeObjectBuilder
+    public class FakeObjectBuilder<TSut> where TSut : class
     {
+        private List<KeyValuePair<string, object>> specifiedDependencies;
+
         public FakeObjectBuilder()
         {
             InjectedMocks = new List<RegisteredMock>();
+            specifiedDependencies = new List<KeyValuePair<string, object>>();
+        }
+
+        public FakeObjectBuilder(List<KeyValuePair<string, object>> specificInstances)
+        {
+            InjectedMocks = new List<RegisteredMock>();
+            specifiedDependencies = specificInstances;
         }
 
         public List<RegisteredMock> InjectedMocks { get; set; }
 
-        public Mock<TSut> BuildFake<TSut>(bool callBaseImplementations=true, List<KeyValuePair<string, object>> specifiedDependencies = null) where TSut : class
+        public Mock<TSut> BuildFake(bool callBaseImplementations=true)
         {
-            return new Mock<TSut>(GetMostSpecialisedConstructorParameterValues<TSut>(specifiedDependencies))
+            return new Mock<TSut>(GetMostSpecialisedConstructorParameterValues())
             {
                 CallBase = callBaseImplementations
             };
@@ -44,12 +50,12 @@ namespace CoolTestStuff
             return (Mock<TDependency>)InjectedMocks.First(m => m.TypeThatHasBeenMocked == typeof(TDependency) && m.NameOfMockInstance == name).Mock;
         }
 
-        private object[] GetMostSpecialisedConstructorParameterValues<TSut>(List<KeyValuePair<string, object>> specifiedDependencies) where TSut : class
+        private object[] GetMostSpecialisedConstructorParameterValues()
         {
             var constructorValues = new List<object>();
-            foreach (var param in GetMostSpecialisedConstructor<TSut>().GetParameters())
+            foreach (var param in GetMostSpecialisedConstructor().GetParameters())
             {
-                var specifiedDependency = GetSpecifiedInstance(specifiedDependencies, param);
+                var specifiedDependency = GetSpecifiedInstance(param);
                 if (!specifiedDependency.Equals(default(KeyValuePair<string, object>)))
                 {
                     constructorValues.Add(specifiedDependency.Value);
@@ -77,7 +83,7 @@ namespace CoolTestStuff
             return constructorValues.ToArray();
         }
 
-        private KeyValuePair<string, object> GetSpecifiedInstance(List<KeyValuePair<string, object>> specifiedDependencies, ParameterInfo paramInfo)
+        private KeyValuePair<string, object> GetSpecifiedInstance(ParameterInfo paramInfo)
         {
             return specifiedDependencies
                 .FirstOrDefault(
@@ -89,7 +95,7 @@ namespace CoolTestStuff
         private static bool CanBeMocked(Type dependencyType)
             => dependencyType.IsClass || dependencyType.IsInterface;
 
-        private static ConstructorInfo GetMostSpecialisedConstructor<TSut>() where TSut : class
+        private static ConstructorInfo GetMostSpecialisedConstructor()
         {
             var allCtors = typeof(TSut).GetConstructors();
             var maxParams = allCtors.Max(ctor => ctor.GetParameters().Length);

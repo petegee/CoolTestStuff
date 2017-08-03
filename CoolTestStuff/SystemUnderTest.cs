@@ -1,10 +1,7 @@
 ﻿using Moq;
 using NUnit.Framework;
-using Ploeh.AutoFixture;
-using Ploeh.AutoFixture.AutoMoq;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace CoolTestStuff
 {
@@ -12,8 +9,6 @@ namespace CoolTestStuff
     /// Simple automocking base-class for Unit testing. It contains basic Auto-mocking
     /// of the test Target <typeparamref name="TSut"/> via constructor injection only. It will
     /// not automock public properties.
-    /// It also contains access to AutoFixture's builder pattern via the CreateA and CreateAnAutoMocked
-    /// methods for building test data or to take control of what objects you compose your SUT with.
     /// </summary>
     /// <typeparam name="TSut"></typeparam>
     public class SystemUnderTest<TSut>
@@ -21,9 +16,7 @@ namespace CoolTestStuff
     {
         private List<KeyValuePair<string, object>> specifiedDependencies;
         private Lazy<Mock<TSut>> targetFake;
-        private IFixture autoMockingObjectBuilder;
-        private IFixture objectBuilder;
-        private FakeObjectBuilder fakeBuilder;
+        private FakeObjectBuilder<TSut> targetFakeBuilder;
 
         /// <summary>
         /// The SUT test-target fake. Use this to set up partial-mock
@@ -51,11 +44,6 @@ namespace CoolTestStuff
         [SetUp]
         protected void PerTestSetup()
         {
-            objectBuilder = CreateFixture();
-
-            autoMockingObjectBuilder = CreateFixture();
-            autoMockingObjectBuilder.Customize(new AutoMoqCustomization());
-
             specifiedDependencies = new List<KeyValuePair<string, object>>();
 
             // We build the targetFake class as late as possible to all people to use
@@ -64,8 +52,8 @@ namespace CoolTestStuff
                 () =>
                 {
                     // lazily build the SUT/Fake...
-                    fakeBuilder = new FakeObjectBuilder();
-                    return fakeBuilder.BuildFake<TSut>(true, specifiedDependencies);
+                    targetFakeBuilder = new FakeObjectBuilder<TSut>(specifiedDependencies);
+                    return targetFakeBuilder.BuildFake(true);
                 });
                    
 
@@ -97,37 +85,7 @@ namespace CoolTestStuff
         /// Override in your test class as required to hook into nUnit execution path.
         /// </summary>
         protected virtual void DoPerTestTearDown() { }
-        
-        /// <summary>
-        /// Create an instance of T which has been built by Autofixture with all its 
-        /// properties recursively built or mocked where it can. Access to these Mocks
-        /// are via the GetMockAt() method.
-        /// </summary>
-        protected T CreateAnAutoMocked<T>()
-        {
-            return autoMockingObjectBuilder.Create<T>();
-        }
-
-        /// <summary>
-        /// Create an instance of T which has been built by Autofixture with all its 
-        /// properties recursively built - this will have no mocks injected.
-        /// </summary>
-        protected T CreateA<T>()
-        {
-            return objectBuilder.Create<T>();
-        }
-
-        /// <summary>
-        /// Create an instance of T which is a Fake T (eg a Mock.Object)
-        /// </summary>
-        protected T CreateAFake<T>(bool callBaseImplementation = true, List<KeyValuePair<string, object>> specifiedInstances = null) where T : class
-        {
-            return
-                specifiedInstances == null
-                    ? new FakeObjectBuilder().BuildFake<T>().Object
-                    : new FakeObjectBuilder().BuildFake<T>(callBaseImplementation, specifiedInstances).Object;
-        }
-
+       
         /// <summary>
         /// Get a Mock which was injected into the SUT (injected via its CTOR) instance.
         /// </summary>
@@ -136,7 +94,7 @@ namespace CoolTestStuff
             // in order to get a Mock, then the actual TargetMock needs to be created with all its parameters
             ForceCreationOfLazySystemUnderTest();
 
-            return fakeBuilder.GetInjectedMock<TDependency>();
+            return targetFakeBuilder.GetInjectedMock<TDependency>();
         }
 
         /// <summary>
@@ -149,7 +107,7 @@ namespace CoolTestStuff
             // in order to get a Mock, then the actual TargetMock needs to be created with all its parameters
             ForceCreationOfLazySystemUnderTest();
 
-            return fakeBuilder.GetInjectedMock<TDependency>(name);
+            return targetFakeBuilder.GetInjectedMock<TDependency>(name);
         }
 
         /// <summary>
@@ -195,17 +153,5 @@ namespace CoolTestStuff
             // this forces the creation of the Lazy SUT to happen now.
             var iexistOnlyToForceTheCreationOfTheSystemUnderTest = targetFake.Value;
         }
-
-        private IFixture CreateFixture()
-        {
-            var fixture = new Fixture();
-            fixture.Behaviors.OfType<ThrowingRecursionBehavior>()
-                .ToList()
-                .ForEach(b => autoMockingObjectBuilder?.Behaviors?.Remove(b));
-            fixture.Behaviors.Add(new OmitOnRecursionBehavior());
-
-            return fixture;
-        }
-
     }
 }
