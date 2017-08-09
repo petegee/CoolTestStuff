@@ -1,36 +1,42 @@
-﻿using Moq;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Moq;
 
 namespace CoolTestStuff
 {
-    public class FakeObjectBuilder<TSut> where TSut : class
+    public class Faker<TSut> where TSut : class
     {
-        private List<KeyValuePair<string, object>> specifiedDependencies;
+        private readonly List<KeyValuePair<string, object>> specifiedDependencies;
+        private readonly Lazy<Mock<TSut>> lazyFake;
 
-        public FakeObjectBuilder()
+        public Faker()
         {
             InjectedMocks = new List<RegisteredMock>();
             specifiedDependencies = new List<KeyValuePair<string, object>>();
+
+            lazyFake =
+                new Lazy<Mock<TSut>>(
+                    () => new Mock<TSut>(GetMostSpecialisedConstructorParameterValues()) { CallBase = true });
         }
 
-        public FakeObjectBuilder(List<KeyValuePair<string, object>> specificInstances)
+        public Faker(List<KeyValuePair<string, object>> specificInstances, bool callBase = true)
         {
             InjectedMocks = new List<RegisteredMock>();
             specifiedDependencies = specificInstances;
+
+            lazyFake =
+                new Lazy<Mock<TSut>>(
+                    () => new Mock<TSut>(GetMostSpecialisedConstructorParameterValues()) { CallBase = callBase });
         }
 
         public List<RegisteredMock> InjectedMocks { get; set; }
 
-        public Mock<TSut> BuildFake(bool callBaseImplementations=true)
-        {
-            return new Mock<TSut>(GetMostSpecialisedConstructorParameterValues())
-            {
-                CallBase = callBaseImplementations
-            };
-        }
+        public Mock<TSut> Fake => lazyFake.Value;
+
+        public TSut Faked => lazyFake.Value.Object;
+
 
         /// <summary>
         /// Get a Mock which was injected into the SUT (injected via its CTOR) instance.

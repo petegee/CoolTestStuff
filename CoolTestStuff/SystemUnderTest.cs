@@ -1,7 +1,7 @@
-﻿using Moq;
-using NUnit.Framework;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using Moq;
+using NUnit.Framework;
 
 namespace CoolTestStuff
 {
@@ -16,7 +16,7 @@ namespace CoolTestStuff
     {
         private List<KeyValuePair<string, object>> specifiedDependencies;
         private Lazy<Mock<TSut>> targetFake;
-        private FakeObjectBuilder<TSut> targetFakeBuilder;
+        private Faker<TSut> targetFaker;
 
         /// <summary>
         /// The SUT test-target fake. Use this to set up partial-mock
@@ -52,10 +52,10 @@ namespace CoolTestStuff
                 () =>
                 {
                     // lazily build the SUT/Fake...
-                    targetFakeBuilder = new FakeObjectBuilder<TSut>(specifiedDependencies);
-                    return targetFakeBuilder.BuildFake(true);
+                    targetFaker = new Faker<TSut>(specifiedDependencies, callBase: true);
+                    return targetFaker.Fake;
                 });
-                   
+
 
             DoPerTestSetUp();
         }
@@ -85,7 +85,7 @@ namespace CoolTestStuff
         /// Override in your test class as required to hook into nUnit execution path.
         /// </summary>
         protected virtual void DoPerTestTearDown() { }
-       
+
         /// <summary>
         /// Get a Mock which was injected into the SUT (injected via its CTOR) instance.
         /// </summary>
@@ -94,7 +94,7 @@ namespace CoolTestStuff
             // in order to get a Mock, then the actual TargetMock needs to be created with all its parameters
             ForceCreationOfLazySystemUnderTest();
 
-            return targetFakeBuilder.GetInjectedMock<TDependency>();
+            return targetFaker.GetInjectedMock<TDependency>();
         }
 
         /// <summary>
@@ -107,7 +107,7 @@ namespace CoolTestStuff
             // in order to get a Mock, then the actual TargetMock needs to be created with all its parameters
             ForceCreationOfLazySystemUnderTest();
 
-            return targetFakeBuilder.GetInjectedMock<TDependency>(name);
+            return targetFaker.GetInjectedMock<TDependency>(name);
         }
 
         /// <summary>
