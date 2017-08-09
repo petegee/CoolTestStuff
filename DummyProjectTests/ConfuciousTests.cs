@@ -118,7 +118,7 @@ namespace DummyProjectTests
 
 
         [Test]
-        public void MockADependencyOfAConcreteDependencyOfOurTestTarget()
+        public void LetsInjectARealMovieQuoteGeneratorWithMockedDependenciesIntoOurSutWhichWeCanSetup()
         {
             // Arrange
             var imdbFaker = new Faker<IImdb>();
@@ -126,13 +126,35 @@ namespace DummyProjectTests
                 .Setup(imdb => imdb.GetTopMovieQuote())
                 .Returns("You cant handle the truth!");
 
+            // build a real MovieQuoteGenerator instance and manually inject it...
             var realMovieQuoteGeneratorWithFakeImdb = new MovieQuoteGenerator(imdbFaker.Faked) as IQuoteGenerator;
+            
+            // and pass that instance to be injected into out SUT.
             InjectTargetWith(realMovieQuoteGeneratorWithFakeImdb);
 
             // Act
             var result = Target.ImpartWiseWordsOfWisdom();
 
             // Assert
+            result.Should().Contain("You cant handle the truth!");
+        }
+
+        [Test]
+        public void LetsInjectAFakeMovieQuoteGeneratorIntoOurSutWhichWeCanSetup()
+        {
+            // Arrange - build a fake MovieQuoteGenerator and inject our SUT with its .Object
+            var quoteGeneratorFaker = new Faker<MovieQuoteGenerator>();
+            InjectTargetWith(quoteGeneratorFaker.Faked);
+
+            // now setup the fake/mock directly via the faker.
+            quoteGeneratorFaker.GetInjectedMock<IImdb>()
+                .Setup(imdb => imdb.GetTopMovieQuote())
+                .Returns("You cant handle the truth!");
+
+            // Act
+            var result = Target.ImpartWiseWordsOfWisdom();
+
+            // Assert - are we having fun yet?
             result.Should().Contain("You cant handle the truth!");
         }
 
