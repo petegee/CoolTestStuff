@@ -59,7 +59,8 @@ namespace CoolTestStuff
         private object[] GetMostSpecialisedConstructorParameterValues()
         {
             var constructorValues = new List<object>();
-            foreach (var param in GetMostSpecialisedConstructor().GetParameters())
+            var ctorParameterInfo = GetMostSpecialisedConstructor()?.GetParameters() ?? new ParameterInfo[] { };     
+            foreach (var param in ctorParameterInfo)
             {
                 var specifiedDependency = GetSpecifiedInstance(param);
                 if (!specifiedDependency.Equals(default(KeyValuePair<string, object>)))
@@ -104,6 +105,10 @@ namespace CoolTestStuff
         private static ConstructorInfo GetMostSpecialisedConstructor()
         {
             var allCtors = typeof(TSut).GetConstructors();
+
+            if (allCtors == null || allCtors.Length == 0)
+                return null;
+
             var maxParams = allCtors.Max(ctor => ctor.GetParameters().Length);
             return allCtors.Single(ctor => ctor.GetParameters().Length == maxParams);
         }

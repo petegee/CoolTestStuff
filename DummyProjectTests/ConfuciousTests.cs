@@ -90,6 +90,7 @@ namespace DummyProjectTests
                 .Setup(pg => pg.SaySomething())
                 .Returns("Do you feel lucky today?");
 
+            // Act
             var result = Target.ImpartWiseWordsOfWisdom();
 
             result.Should().Contain("Do you feel lucky today?");
@@ -108,12 +109,32 @@ namespace DummyProjectTests
                 .Setup(pg => pg.SaySomething())
                 .Returns("Do you feel lucky today?");
 
+            // Act
             var result = Target.ImpartWiseWordsOfWisdom();
 
             result.Should().Contain("Do you feel lucky today?");
             result.Should().Contain("you're just a brain in a vat!");
         }
 
+
+        [Test]
+        public void MockADependencyOfAConcreteDependencyOfOurTestTarget()
+        {
+            // Arrange
+            var imdbFaker = new Faker<IImdb>();
+            imdbFaker.Fake
+                .Setup(imdb => imdb.GetTopMovieQuote())
+                .Returns("You cant handle the truth!");
+
+            var realMovieQuoteGeneratorWithFakeImdb = new MovieQuoteGenerator(imdbFaker.Faked) as IQuoteGenerator;
+            InjectTargetWith(realMovieQuoteGeneratorWithFakeImdb);
+
+            // Act
+            var result = Target.ImpartWiseWordsOfWisdom();
+
+            // Assert
+            result.Should().Contain("You cant handle the truth!");
+        }
 
         public class DinosaurQuouteGenerator : IQuoteGenerator
         {

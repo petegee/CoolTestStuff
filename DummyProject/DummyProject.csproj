@@ -42,6 +42,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Confucious.cs" />
+    <Compile Include="IImdb.cs" />
+    <Compile Include="Imdb.cs" />
     <Compile Include="IQuoteGenerator.cs" />
     <Compile Include="MovieQuoteGenerator.cs" />
     <Compile Include="PhilisophicalQuoteGenerator.cs" />
