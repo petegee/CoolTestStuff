@@ -6,36 +6,64 @@ using Moq;
 
 namespace CoolTestStuff
 {
-    public class Faker<TSut> where TSut : class
+    /// <summary>
+    /// A builder which can build a Mock[T]/Fake and inject its .Object instance dependencies with Mocks 
+    /// or supplied dependencies via the most specialised constructor. 
+    /// It acts as a registry for supplied and/or injected objects for access to them via the GetInjectedMock
+    /// methods.
+    /// This is based of my https://github.com/petegee/CoolTestStuff project.
+    /// </summary>
+    /// <typeparam name="T">The type to build a fake of.</typeparam>
+    public class Faker<T> where T : class
     {
         private readonly List<KeyValuePair<string, object>> specifiedDependencies;
-        private readonly Lazy<Mock<TSut>> lazyFake;
+        private readonly Lazy<Mock<T>> lazyFake;
 
+        /// <summary>
+        /// Initialise a default Faker object which will inject mocks into the ctor where it
+        /// can and register those mocks for later reference. It will also default the Mock[T] to
+        /// be a partial mock.
+        /// </summary>
         public Faker()
         {
             InjectedMocks = new List<RegisteredMock>();
             specifiedDependencies = new List<KeyValuePair<string, object>>();
 
             lazyFake =
-                new Lazy<Mock<TSut>>(
-                    () => new Mock<TSut>(GetMostSpecialisedConstructorParameterValues()) { CallBase = true });
+                new Lazy<Mock<T>>(
+                    () => new Mock<T>(GetMostSpecialisedConstructorParameterValues()) { CallBase = true });
         }
 
+        /// <summary>
+        /// Initialise a Faker[T] with specific dependencies it should use to inject the T with, and whether
+        /// or not it should support partial mocking.
+        /// </summary>
+        /// <param name="specificInstances"></param>
+        /// <param name="callBase"></param>
         public Faker(List<KeyValuePair<string, object>> specificInstances, bool callBase = true)
         {
             InjectedMocks = new List<RegisteredMock>();
             specifiedDependencies = specificInstances;
 
             lazyFake =
-                new Lazy<Mock<TSut>>(
-                    () => new Mock<TSut>(GetMostSpecialisedConstructorParameterValues()) { CallBase = callBase });
+                new Lazy<Mock<T>>(
+                    () => new Mock<T>(GetMostSpecialisedConstructorParameterValues()) { CallBase = callBase });
         }
 
+        /// <summary>
+        /// A list of all the mocks that were injected into the Mock[T].Object
+        /// </summary>
         public List<RegisteredMock> InjectedMocks { get; set; }
 
-        public Mock<TSut> Fake => lazyFake.Value;
+        /// <summary>
+        /// This is the Mock[T] - lazily instantiated.
+        /// </summary>
+        public Mock<T> Fake => lazyFake.Value;
 
-        public TSut Faked => lazyFake.Value.Object;
+        /// <summary>
+        /// This is the Mock[T].Object - eg the faked object T
+        /// </summary>
+        public T Faked => lazyFake.Value.Object;
 
 
         /// <summary>
@@ -59,11 +87,11 @@ namespace CoolTestStuff
         private object[] GetMostSpecialisedConstructorParameterValues()
         {
             var constructorValues = new List<object>();
-            var ctorParameterInfo = GetMostSpecialisedConstructor()?.GetParameters() ?? new ParameterInfo[] { };     
+            var ctorParameterInfo = GetMostSpecialisedConstructor()?.GetParameters() ?? new ParameterInfo[] { };
             foreach (var param in ctorParameterInfo)
             {
                 var specifiedDependency = GetSpecifiedInstance(param);
-                if (!specifiedDependency.Equals(default(KeyValuePair<string, object>)))
+                if (UseSpecifiedDependency(specifiedDependency))
                 {
                     constructorValues.Add(specifiedDependency.Value);
                     continue;
@@ -71,16 +99,7 @@ namespace CoolTestStuff
 
                 if (CanBeMocked(param.ParameterType))
                 {
-                    var mockInstance = CreateMock(param.ParameterType);
-                    InjectedMocks.Add(
-                        new RegisteredMock
-                        {
-                            Mock = mockInstance,
-                            TypeThatHasBeenMocked = param.ParameterType,
-                            NameOfMockInstance = param.Name
-                        });
-
-                    constructorValues.Add(mockInstance.Object);
+                    constructorValues.Add(CreateMockFor(param).Object);
                     continue;
                 }
 
@@ -88,6 +107,28 @@ namespace CoolTestStuff
             }
 
             return constructorValues.ToArray();
+        }
+
+        private Mock CreateMockFor(ParameterInfo param)
+        {
+            var mockInstance = (Mock)typeof(Mock<>).MakeGenericType(param.ParameterType)
+                    .GetConstructor(new Type[0])
+                    ?.Invoke(new object[0]);
+
+            InjectedMocks.Add(
+                new RegisteredMock
+                {
+                    Mock = mockInstance,
+                    TypeThatHasBeenMocked = param.ParameterType,
+                    NameOfMockInstance = param.Name
+                });
+
+            return mockInstance;
+        }
+
+        private static bool UseSpecifiedDependency(KeyValuePair<string, object> keyValuePair)
+        {
+            return !keyValuePair.Equals(default(KeyValuePair<string, object>));
         }
 
         private KeyValuePair<string, object> GetSpecifiedInstance(ParameterInfo paramInfo)
@@ -104,19 +145,14 @@ namespace CoolTestStuff
 
         private static ConstructorInfo GetMostSpecialisedConstructor()
         {
-            var allCtors = typeof(TSut).GetConstructors();
+            var allCtors = typeof(T).GetConstructors();
 
-            if (allCtors == null || allCtors.Length == 0)
+            if (allCtors.Length == 0)
                 return null;
 
             var maxParams = allCtors.Max(ctor => ctor.GetParameters().Length);
             return allCtors.Single(ctor => ctor.GetParameters().Length == maxParams);
         }
-
-        private static Mock CreateMock(Type dependencyType)
-            => (Mock)typeof(Mock<>).MakeGenericType(dependencyType)
-                    .GetConstructor(new Type[0])
-                    ?.Invoke(new object[0]);
 
         private static object GetDefault(Type type)
             => type.IsValueType ? Activator.CreateInstance(type) : null;
