@@ -5,7 +5,7 @@ using NUnit.Framework;
 namespace CoolTestStuff
 {
     /// <summary>
-    /// Simple automocking base-class for Unit testing. It contains basic Auto-mocking
+    /// Simple auto-faking/mocking base-class for Unit testing. It contains basic Auto-mocking
     /// of the test Target <typeparamref name="TSut"/> via constructor injection only. It will
     /// not automock public properties.
     /// </summary>
@@ -16,13 +16,6 @@ namespace CoolTestStuff
         private List<KeyValuePair<string, object>> specifiedDependencies;
         private Lazy<TSut> targetFake;
         private Faker<TSut> targetFaker;
-
-        /// <summary>
-        /// The SUT test-target fake. Use this to set up partial-mock
-        /// expectations on your SUT test-target.
-        /// </summary>
-        [Obsolete]
-        protected TSut TargetFake => targetFake.Value;
 
         /// <summary>
         /// Access to the actual SUT test-target 
@@ -87,36 +80,26 @@ namespace CoolTestStuff
         protected virtual void DoPerTestTearDown() { }
 
         /// <summary>
-        /// Get a Mock which was injected into the SUT (injected via its CTOR) instance.
+        /// Get a Fake which was injected into the SUT (injected via its CTOR) instance.
         /// </summary>
-        protected TDependency GetInjectedMock<TDependency>() where TDependency : class
+        protected TDependency GetInjectedFake<TDependency>() where TDependency : class
         {
-            // in order to get a Mock, then the actual TargetMock needs to be created with all its parameters
             ForceCreationOfLazySystemUnderTest();
 
-            return targetFaker.GetInjectedMock<TDependency>();
+            return targetFaker.GetInjectedFake<TDependency>();
         }
 
         /// <summary>
-        /// Get a Mock which was injected into the SUT (injected via its CTOR) instance naming a parameter.
+        /// Get a Fake which was injected into the SUT (injected via its CTOR) instance naming a parameter.
         /// use only when a SUT has two of the same types injected that are differentiated by parameter name.
-        /// NOTE: use GetInjectedMock() with no parameters by default - then there will no magic-strings.
+        /// NOTE: use GetInjectedFake() with no parameters by default - then there will no magic-strings.
         /// </summary>
-        protected TDependency GetInjectedMock<TDependency>(string name) where TDependency : class
+        protected TDependency GetInjectedFake<TDependency>(string name) where TDependency : class
         {
-            // in order to get a Mock, then the actual TargetMock needs to be created with all its parameters
             ForceCreationOfLazySystemUnderTest();
 
-            return targetFaker.GetInjectedMock<TDependency>(name);
+            return targetFaker.GetInjectedFake<TDependency>(name);
         }
-
-        ///// <summary>
-        ///// Simple wrapper around Moqs Mock.Get() at a specific property.
-        ///// Use this to get access to Mocks which the builders may have created when/if you used
-        ///// CreateAnAutoMocked() or CreateA() methods. 
-        ///// </summary>
-        //protected T GetMockAt<T>(T mockReference) where T : class
-        //    => Mock.Get(mockReference);
 
         /// <summary>
         /// Ensure this instance of an object is used when building the SUT.

@@ -7,9 +7,9 @@ using NSubstitute;
 namespace CoolTestStuff
 {
     /// <summary>
-    /// A builder which can build a Mock[T]/Fake and inject its .Object instance dependencies with Mocks 
+    /// A builder which can build a Mock/Fake and inject its dependencies with Fakes 
     /// or supplied dependencies via the most specialised constructor. 
-    /// It acts as a registry for supplied and/or injected objects for access to them via the GetInjectedMock
+    /// It acts as a registry for supplied and/or injected objects for access to them via the GetInjectedFake
     /// methods.
     /// This is based of my https://github.com/petegee/CoolTestStuff project.
     /// </summary>
@@ -20,68 +20,63 @@ namespace CoolTestStuff
         private readonly Lazy<T> lazyFake;
 
         /// <summary>
-        /// Initialise a default Faker object which will inject mocks into the ctor where it
-        /// can and register those mocks for later reference. It will also default the Mock[T] to
-        /// be a partial mock.
+        /// Initialise a default Faker object which will inject fakes into the ctor where it
+        /// can and register those fakes for later reference. 
         /// </summary>
         public Faker()
         {
-            InjectedMocks = new List<RegisteredMock>();
+            InjectedFakes = new List<RegisteredFake>();
             specifiedDependencies = new List<KeyValuePair<string, object>>();
 
-            lazyFake =
-                new Lazy<T>(
-                    () => Substitute.ForPartsOf<T>(GetMostSpecialisedConstructorParameterValues()));
-                    //() => new Mock<T>(GetMostSpecialisedConstructorParameterValues()) { CallBase = true });
+            lazyFake = new Lazy<T>(BuildFake);
         }
 
         /// <summary>
-        /// Initialise a Faker[T] with specific dependencies it should use to inject the T with, and whether
-        /// or not it should support partial mocking.
+        /// Initialise a Faker[T] with specific dependencies it should use to inject the T with.
         /// </summary>
         /// <param name="specificInstances"></param>
         public Faker(List<KeyValuePair<string, object>> specificInstances)
         {
-            InjectedMocks = new List<RegisteredMock>();
+            InjectedFakes = new List<RegisteredFake>();
             specifiedDependencies = specificInstances;
 
-            lazyFake =
-                new Lazy<T>(
-                    () => Substitute.ForPartsOf<T>(GetMostSpecialisedConstructorParameterValues()));
+            lazyFake = new Lazy<T>(BuildFake);
         }
 
-        /// <summary>
-        /// A list of all the mocks that were injected into the Mock[T].Object
-        /// </summary>
-        public List<RegisteredMock> InjectedMocks { get; set; }
 
         /// <summary>
-        /// This is the Mock[T] - lazily instantiated.
+        /// A list of all the fakes that were injected into the Fake[T] during its construction.
+        /// </summary>
+        public List<RegisteredFake> InjectedFakes { get; set; }
+
+        /// <summary>
+        /// This is the Fake[T] - lazily instantiated.
         /// </summary>
         public T Fake => lazyFake.Value;
 
-        ///// <summary>
-        ///// This is the Mock[T].Object - eg the faked object T
-        ///// </summary>
-        //public T Faked => lazyFake.Value.Object;
-
-
         /// <summary>
-        /// Get a Mock which was injected into the SUT (injected via its CTOR) instance.
+        /// Get a Fake which was injected into the SUT (injected via its CTOR) instance.
         /// </summary>
-        public TDependency GetInjectedMock<TDependency>() where TDependency : class
+        public TDependency GetInjectedFake<TDependency>() where TDependency : class
         {
-            return (TDependency)InjectedMocks.First(m => m.TypeThatHasBeenMocked == typeof(TDependency)).Mock;
+            return (TDependency)InjectedFakes.First(m => m.TypeThatHasBeenFaked == typeof(TDependency)).Fake;
         }
 
         /// <summary>
-        /// Get a Mock which was injected into the SUT (injected via its CTOR) instance naming a parameter.
+        /// Get a Fake which was injected into the SUT (injected via its CTOR) instance naming a parameter.
         /// use only when a SUT has two of the same types injected that are differentiated by parameter name.
-        /// NOTE: use GetInjectedMock() with no parameters by default - then there will no magic-strings.
+        /// NOTE: use GetInjectedFake() with no parameters by default - then there will no magic-strings.
         /// </summary>
-        public TDependency GetInjectedMock<TDependency>(string name) where TDependency : class
+        public TDependency GetInjectedFake<TDependency>(string name) where TDependency : class
         {
-            return (TDependency)InjectedMocks.First(m => m.TypeThatHasBeenMocked == typeof(TDependency) && m.NameOfMockInstance == name).Mock;
+            return (TDependency)InjectedFakes.First(m => m.TypeThatHasBeenFaked == typeof(TDependency) && m.NameOfFakeInstance == name).Fake;
+        }
+
+        private T BuildFake()
+        {
+            return typeof(T).IsInterface
+                ? Substitute.For<T>(GetMostSpecialisedConstructorParameterValues())
+                : Substitute.ForPartsOf<T>(GetMostSpecialisedConstructorParameterValues());
         }
 
         private object[] GetMostSpecialisedConstructorParameterValues()
@@ -97,9 +92,9 @@ namespace CoolTestStuff
                     continue;
                 }
 
-                if (CanBeMocked(param.ParameterType))
+                if (CanBeFaked(param.ParameterType))
                 {
-                    constructorValues.Add(CreateMockFor(param));
+                    constructorValues.Add(CreateFakeFor(param));
                     continue;
                 }
 
@@ -109,20 +104,19 @@ namespace CoolTestStuff
             return constructorValues.ToArray();
         }
 
-        private object CreateMockFor(ParameterInfo param)
+        private object CreateFakeFor(ParameterInfo param)
         {
-            var mockInstance = Substitute.For(new Type[] { param.ParameterType }, new object[] { });
+            var fakeInstance = Substitute.For(new Type[] { param.ParameterType }, new object[] { });
 
-
-            InjectedMocks.Add(
-                new RegisteredMock
+            InjectedFakes.Add(
+                new RegisteredFake
                 {
-                    Mock = mockInstance,
-                    TypeThatHasBeenMocked = param.ParameterType,
-                    NameOfMockInstance = param.Name
+                    Fake = fakeInstance,
+                    TypeThatHasBeenFaked = param.ParameterType,
+                    NameOfFakeInstance = param.Name
                 });
 
-            return mockInstance;
+            return fakeInstance;
         }
 
         private static bool UseSpecifiedDependency(KeyValuePair<string, object> keyValuePair)
@@ -139,7 +133,7 @@ namespace CoolTestStuff
                         paramInfo.Name == (o.Key ?? paramInfo.Name));
         }
 
-        private static bool CanBeMocked(Type dependencyType)
+        private static bool CanBeFaked(Type dependencyType)
             => dependencyType.IsClass || dependencyType.IsInterface;
 
         private static ConstructorInfo GetMostSpecialisedConstructor()
@@ -157,11 +151,13 @@ namespace CoolTestStuff
             => type.IsValueType ? Activator.CreateInstance(type) : null;
 
 
-        public class RegisteredMock
+        public class RegisteredFake
         {
-            public Type TypeThatHasBeenMocked { get; set; }
-            public string NameOfMockInstance { get; set; }
-            public object Mock { get; set; }
+            public Type TypeThatHasBeenFaked { get; set; }
+
+            public string NameOfFakeInstance { get; set; }
+
+            public object Fake { get; set; }
         }
     }
 }
