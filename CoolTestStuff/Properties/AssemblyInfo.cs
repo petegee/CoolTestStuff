@@ -9,8 +9,8 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("RoboMock")]
-[assembly: AssemblyCopyright("Copyright ©  2017")]
+[assembly: AssemblyProduct("CoolTestStuff")]
+[assembly: AssemblyCopyright("MIT Licensed 2017 - https://github.com/petegee/CoolTestStuff/blob/master/LICENSE")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

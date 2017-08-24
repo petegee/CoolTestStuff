@@ -1,6 +1,7 @@
 ﻿using CoolTestStuff;
 using DummyProject;
 using FluentAssertions;
+using NSubstitute;
 using NUnit.Framework;
 
 namespace DummyProjectTests
@@ -11,8 +12,9 @@ namespace DummyProjectTests
         [Test]
         public void PartialMockWillCallMockedGetQuoteMethod()
         {
-            TargetFake.Setup(f => f.GetTheQuoutes())
-                .Returns("Mocked to all hell!");
+            Target.When(t => t.GetTheQuoutes()).DoNotCallBase();
+
+            Target.GetTheQuoutes().Returns("Mocked to all hell!");
 
             var result = Target.ImpartWiseWordsOfWisdom();
 
@@ -33,7 +35,7 @@ namespace DummyProjectTests
         {
             // Magic strings are ugly - dont use me unless you really have too...
             // consider making properties public so you can use the non-magic string version
-            // of InjectTargetWith() and then use GetMockAt().
+            // of InjectTargetWith()
             InjectTargetWith(new CowQuouteGenerator(), "movieQuoteGenerator");
             InjectTargetWith(new DinosaurQuouteGenerator(), "philosophicalQuoteGenerator");
 
@@ -47,8 +49,7 @@ namespace DummyProjectTests
         public void UseSingleSpecificVersion()
         {
             InjectTargetWith(new CowQuouteGenerator(), "movieQuoteGenerator");
-            GetMockAt(Target.PhilosophicalQuoteGenerator)
-                .Setup(pg => pg.SaySomething())
+            Target.PhilosophicalQuoteGenerator.SaySomething()
                 .Returns("You are just a brain in a vat...");
 
             var result = Target.ImpartWiseWordsOfWisdom();
@@ -68,10 +69,9 @@ namespace DummyProjectTests
         }
 
         [Test]
-        public void GetMockAt()
+        public void NLevelDeepMockTests()
         {
-            GetMockAt(Target.PhilosophicalQuoteGenerator)
-                .Setup(pg => pg.SaySomething())
+            Target.PhilosophicalQuoteGenerator.SaySomething()
                 .Returns("You are just a brain in a vat...");
 
             var result = Target.ImpartWiseWordsOfWisdom();
@@ -82,12 +82,12 @@ namespace DummyProjectTests
         [Test]
         public void GetInjectedMock()
         {
-            GetInjectedMock<IQuoteGenerator>("philosophicalQuoteGenerator")
-                .Setup(pg => pg.SaySomething())
+            GetInjectedFake<IQuoteGenerator>("philosophicalQuoteGenerator")
+                .SaySomething()
                 .Returns("you're just a brain in a vat!");
 
-            GetInjectedMock<IQuoteGenerator>("movieQuoteGenerator")
-                .Setup(pg => pg.SaySomething())
+            GetInjectedFake<IQuoteGenerator>("movieQuoteGenerator")
+                .SaySomething()
                 .Returns("Do you feel lucky today?");
 
             // Act
@@ -96,17 +96,14 @@ namespace DummyProjectTests
             result.Should().Contain("Do you feel lucky today?");
             result.Should().Contain("you're just a brain in a vat!");
         }
-
         [Test]
         public void YoureBetterOffUsingGetMockAtInsteadOfGetInjectedMockWithNamedParameters()
         {
             // Look mum, no magic strings!
-            GetMockAt(Target.MovieQuoteGenerator)
-                .Setup(pg => pg.SaySomething())
+            Target.MovieQuoteGenerator.SaySomething()
                 .Returns("you're just a brain in a vat!");
 
-            GetMockAt(Target.PhilosophicalQuoteGenerator)
-                .Setup(pg => pg.SaySomething())
+            Target.PhilosophicalQuoteGenerator.SaySomething()
                 .Returns("Do you feel lucky today?");
 
             // Act
@@ -118,17 +115,16 @@ namespace DummyProjectTests
 
 
         [Test]
-        public void LetsInjectARealMovieQuoteGeneratorWithMockedDependenciesIntoOurSutWhichWeCanSetup()
+        public void LetsInjectARealMovieQuoteGeneratorWithFakedDependenciesIntoOurSutWhichWeCanSetup()
         {
             // Arrange
             var imdbFaker = new Faker<IImdb>();
-            imdbFaker.Fake
-                .Setup(imdb => imdb.GetTopMovieQuote())
+            imdbFaker.Fake.GetTopMovieQuote()
                 .Returns("You cant handle the truth!");
 
             // build a real MovieQuoteGenerator instance and manually inject it...
-            var realMovieQuoteGeneratorWithFakeImdb = new MovieQuoteGenerator(imdbFaker.Faked) as IQuoteGenerator;
-            
+            var realMovieQuoteGeneratorWithFakeImdb = new MovieQuoteGenerator(imdbFaker.Fake) as IQuoteGenerator;
+
             // and pass that instance to be injected into out SUT.
             InjectTargetWith(realMovieQuoteGeneratorWithFakeImdb);
 
@@ -144,11 +140,11 @@ namespace DummyProjectTests
         {
             // Arrange - build a fake MovieQuoteGenerator and inject our SUT with its .Object
             var quoteGeneratorFaker = new Faker<MovieQuoteGenerator>();
-            InjectTargetWith(quoteGeneratorFaker.Faked);
+            InjectTargetWith(quoteGeneratorFaker.Fake);
 
             // now setup the fake/mock directly via the faker.
-            quoteGeneratorFaker.GetInjectedMock<IImdb>()
-                .Setup(imdb => imdb.GetTopMovieQuote())
+            quoteGeneratorFaker.GetInjectedFake<IImdb>()
+                .GetTopMovieQuote()
                 .Returns("You cant handle the truth!");
 
             // Act
