@@ -2,14 +2,13 @@
 using DummyProject;
 using FluentAssertions;
 using NSubstitute;
-using NUnit.Framework;
+using Xunit;
 
 namespace DummyProjectTests
 {
-    [TestFixture]
     public class ConfuciousTests : SystemUnderTest<Confucious>
     {
-        [Test]
+        [Fact]
         public void PartialMockWillCallMockedGetQuoteMethod()
         {
             Target.When(t => t.GetTheQuoutes()).DoNotCallBase();
@@ -22,7 +21,7 @@ namespace DummyProjectTests
             result.Should().NotContain("(real GetQuote())");
         }
 
-        [Test]
+        [Fact]
         public void ShouldCallBaseMethods()
         {
             var result = Target.ImpartWiseWordsOfWisdom();
@@ -30,7 +29,7 @@ namespace DummyProjectTests
             result.Should().Contain("(real GetQuote())");
         }
 
-        [Test]
+        [Fact]
         public void UseDifferentSpecificVersion()
         {
             // Magic strings are ugly - dont use me unless you really have too...
@@ -45,7 +44,7 @@ namespace DummyProjectTests
             result.Should().Contain("MOOOOOO!");
         }
 
-        [Test]
+        [Fact]
         public void UseSingleSpecificVersion()
         {
             InjectTargetWith(new CowQuouteGenerator(), "movieQuoteGenerator");
@@ -58,7 +57,7 @@ namespace DummyProjectTests
             result.Should().Contain("You are just a brain in a vat...");
         }
 
-        [Test]
+        [Fact]
         public void UseDefaultSpecificVersionForAll()
         {
             InjectTargetWith(new CowQuouteGenerator());
@@ -68,7 +67,7 @@ namespace DummyProjectTests
             result.Should().Match("*MOOOOOO!*MOOOOOO!*");
         }
 
-        [Test]
+        [Fact]
         public void NLevelDeepMockTests()
         {
             Target.PhilosophicalQuoteGenerator.SaySomething()
@@ -79,7 +78,7 @@ namespace DummyProjectTests
             result.Should().Contain("You are just a brain in a vat...");
         }
 
-        [Test]
+        [Fact]
         public void GetInjectedMock()
         {
             GetInjectedFake<IQuoteGenerator>("philosophicalQuoteGenerator")
@@ -96,7 +95,8 @@ namespace DummyProjectTests
             result.Should().Contain("Do you feel lucky today?");
             result.Should().Contain("you're just a brain in a vat!");
         }
-        [Test]
+        
+        [Fact]
         public void YoureBetterOffUsingGetMockAtInsteadOfGetInjectedMockWithNamedParameters()
         {
             // Look mum, no magic strings!
@@ -113,8 +113,7 @@ namespace DummyProjectTests
             result.Should().Contain("you're just a brain in a vat!");
         }
 
-
-        [Test]
+        [Fact]
         public void LetsInjectARealMovieQuoteGeneratorWithFakedDependenciesIntoOurSutWhichWeCanSetup()
         {
             // Arrange
@@ -135,7 +134,7 @@ namespace DummyProjectTests
             result.Should().Contain("You cant handle the truth!");
         }
 
-        [Test]
+        [Fact]
         public void LetsInjectAFakeMovieQuoteGeneratorIntoOurSutWhichWeCanSetup()
         {
             // Arrange - build a fake MovieQuoteGenerator and inject our SUT with its .Object
