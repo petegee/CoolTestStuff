@@ -7,4 +7,4 @@ This is my crusty automocking container/base test class which:
 * Supports injection of supplied instances as required, else it will mock all dependencies automatically
 * Lazy instantiation of the SUT.
 * Has a Faker class that you can use to build Fake instances, which you can inject into your SUT for n-level deep System-Under-Test style tests. Uses NSubstitute under the hood.
-* Works with xUnit only and provides template methods to hook into the test pipeline.
+* Works with nUnit only and provides template methods to hook into the test pipeline.
