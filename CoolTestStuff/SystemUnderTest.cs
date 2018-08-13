@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using NUnit.Framework;
 
 namespace CoolTestStuff
 {
@@ -13,29 +12,16 @@ namespace CoolTestStuff
     public class SystemUnderTest<TSut>
         where TSut : class
     {
-        private List<KeyValuePair<string, object>> specifiedDependencies;
-        private Lazy<TSut> targetFake;
+        private readonly List<KeyValuePair<string, object>> specifiedDependencies;
+        private readonly Lazy<TSut> targetFake;
         private Faker<TSut> targetFaker;
 
         /// <summary>
-        /// Access to the actual SUT test-target 
+        /// Access to the actual SUT test-target
         /// </summary>
         protected TSut Target => targetFake.Value;
 
-        [OneTimeSetUp]
-        protected void PerRunSetup()
-        {
-            DoPerRunSetUp();
-        }
-
-        [OneTimeTearDown]
-        protected void PerRunTeardown()
-        {
-            DoPerRunTeardown();
-        }
-
-        [SetUp]
-        protected void PerTestSetup()
+        protected SystemUnderTest()
         {
             specifiedDependencies = new List<KeyValuePair<string, object>>();
 
@@ -48,36 +34,8 @@ namespace CoolTestStuff
                     targetFaker = new Faker<TSut>(specifiedDependencies);
                     return targetFaker.Fake;
                 });
-
-
-            DoPerTestSetUp();
         }
 
-        [TearDown]
-        protected void PerTestTeardown()
-        {
-            DoPerTestTearDown();
-        }
-
-        /// <summary>
-        /// Override in your test class as required to hook into nUnit execution path.
-        /// </summary>
-        protected virtual void DoPerRunSetUp() { }
-
-        /// <summary>
-        /// Override in your test class as required to hook into nUnit execution path.
-        /// </summary>
-        protected virtual void DoPerRunTeardown() { }
-
-        /// <summary>
-        /// Override in your test class as required to hook into nUnit execution path.
-        /// </summary>
-        protected virtual void DoPerTestSetUp() { }
-
-        /// <summary>
-        /// Override in your test class as required to hook into nUnit execution path.
-        /// </summary>
-        protected virtual void DoPerTestTearDown() { }
 
         /// <summary>
         /// Get a Fake which was injected into the SUT (injected via its CTOR) instance.
@@ -103,7 +61,7 @@ namespace CoolTestStuff
 
         /// <summary>
         /// Ensure this instance of an object is used when building the SUT.
-        /// This method will not do anything once the Lazy Target property gets 
+        /// This method will not do anything once the Lazy Target property gets
         /// evaluated. Ensure you use this before anything else in your tests.
         /// </summary>
         protected void InjectTargetWith<T>(T instance) where T : class
@@ -112,9 +70,9 @@ namespace CoolTestStuff
         }
 
         /// <summary>
-        /// Ensure this instance of an object is used when building the SUT naming 
+        /// Ensure this instance of an object is used when building the SUT naming
         /// the parameter.
-        /// This method will not do anything once the Lazy Target property gets 
+        /// This method will not do anything once the Lazy Target property gets
         /// evaluated. Ensure you use this before anything else in your tests.
         /// NOTE: use InjectTargetWith() with no parameters by default - then there will no magic-strings.
         /// </summary>
