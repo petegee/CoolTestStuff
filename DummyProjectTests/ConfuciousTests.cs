@@ -19,10 +19,11 @@ namespace DummyProjectTests
         [Fact]
         public void BasicUsageExampleWithSubstituteAssertion()
         {
+            Target.MovieQuoteGenerator.SaySomething().Returns("Frankly, my dear, I don't give a damn.");
+
             var result = Target.ImpartWiseWordsOfWisdom();
 
-            Target.PhilosophicalQuoteGenerator.SaySomething().Received();
-            Target.MovieQuoteGenerator.SaySomething().Received();
+            Target.MovieQuoteGenerator.Received().SaySomething();
         }
 
 
