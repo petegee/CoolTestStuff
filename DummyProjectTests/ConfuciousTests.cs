@@ -9,6 +9,24 @@ namespace DummyProjectTests
     public class ConfuciousTests : SystemUnderTest<Confucious>
     {
         [Fact]
+        public void BasicUsageExample()
+        {
+            var result = Target.ImpartWiseWordsOfWisdom();
+
+            result.Should().Contain("(real GetQuote())");
+        }
+
+        [Fact]
+        public void BasicUsageExampleWithSubstituteAssertion()
+        {
+            var result = Target.ImpartWiseWordsOfWisdom();
+
+            Target.PhilosophicalQuoteGenerator.SaySomething().Received();
+            Target.MovieQuoteGenerator.SaySomething().Received();
+        }
+
+
+        [Fact]
         public void PartialMockWillCallMockedGetQuoteMethod()
         {
             Target.When(t => t.GetTheQuoutes()).DoNotCallBase();
@@ -19,14 +37,6 @@ namespace DummyProjectTests
 
             result.Should().Contain("Mocked to all hell!");
             result.Should().NotContain("(real GetQuote())");
-        }
-
-        [Fact]
-        public void ShouldCallBaseMethods()
-        {
-            var result = Target.ImpartWiseWordsOfWisdom();
-
-            result.Should().Contain("(real GetQuote())");
         }
 
         [Fact]
@@ -97,7 +107,7 @@ namespace DummyProjectTests
         }
         
         [Fact]
-        public void YoureBetterOffUsingGetMockAtInsteadOfGetInjectedMockWithNamedParameters()
+        public void YoureBetterOffAccessingInjectedFakesViaPublicPropertiesInsteadOfGetInjectedMockWithNamedParameters()
         {
             // Look mum, no magic strings!
             Target.MovieQuoteGenerator.SaySomething()
