@@ -16,7 +16,7 @@ namespace CoolTestStuff.Faker
     /// <typeparam name="T">The type to build a fake of.</typeparam>
     public class Faker<T> where T : class
     {
-        private readonly List<SpecifiedInstance> _specifiedDependencies;
+        private readonly List<SpecifiedInstance> _specifiedInstances;
         private readonly Lazy<T> _lazyFake;
 
         /// <summary>
@@ -26,7 +26,7 @@ namespace CoolTestStuff.Faker
         public Faker()
         {
             InjectedFakes = new List<FakedObject>();
-            _specifiedDependencies = new List<SpecifiedInstance>();
+            _specifiedInstances = new List<SpecifiedInstance>();
 
             _lazyFake = new Lazy<T>(BuildFake);
         }
@@ -38,7 +38,7 @@ namespace CoolTestStuff.Faker
         public Faker(List<SpecifiedInstance> specificInstances)
         {
             InjectedFakes = new List<FakedObject>();
-            _specifiedDependencies = specificInstances;
+            _specifiedInstances = specificInstances;
 
             _lazyFake = new Lazy<T>(BuildFake);
         }
@@ -124,7 +124,7 @@ namespace CoolTestStuff.Faker
 
         private SpecifiedInstance? GetSpecifiedInstance(ParameterInfo paramInfo)
         {
-            return _specifiedDependencies
+            return _specifiedInstances
                 .FirstOrDefault(
                     o =>
                         paramInfo.ParameterType.IsInstanceOfType(o.Instance) &&
