@@ -16,6 +16,7 @@ namespace CoolTestStuff.Faker
     /// <typeparam name="T">The type to build a fake of.</typeparam>
     public class Faker<T> where T : class
     {
+        private readonly List<FakedObject> _injectedFakes;
         private readonly List<SpecifiedInstance> _specifiedInstances;
         private readonly Lazy<T> _lazyFake;
 
@@ -25,7 +26,7 @@ namespace CoolTestStuff.Faker
         /// </summary>
         public Faker()
         {
-            InjectedFakes = new List<FakedObject>();
+            _injectedFakes = new List<FakedObject>();
             _specifiedInstances = new List<SpecifiedInstance>();
 
             _lazyFake = new Lazy<T>(BuildFake);
@@ -37,17 +38,12 @@ namespace CoolTestStuff.Faker
         /// <param name="specificInstances"></param>
         public Faker(List<SpecifiedInstance> specificInstances)
         {
-            InjectedFakes = new List<FakedObject>();
+            _injectedFakes = new List<FakedObject>();
             _specifiedInstances = specificInstances;
 
             _lazyFake = new Lazy<T>(BuildFake);
         }
-
-
-        /// <summary>
-        /// A list of all the fakes that were injected into the Fake[T] during its construction.
-        /// </summary>
-        public List<FakedObject> InjectedFakes { get; }
+        
 
         /// <summary>
         /// This is the Fake[T] - lazily instantiated.
@@ -59,7 +55,7 @@ namespace CoolTestStuff.Faker
         /// </summary>
         public TDependency GetInjectedFake<TDependency>() where TDependency : class
         {
-            return (TDependency)InjectedFakes.First(m => m.TypeThatHasBeenFaked == typeof(TDependency)).Fake;
+            return (TDependency)_injectedFakes.First(m => m.TypeThatHasBeenFaked == typeof(TDependency)).Fake;
         }
 
         /// <summary>
@@ -69,7 +65,7 @@ namespace CoolTestStuff.Faker
         /// </summary>
         public TDependency GetInjectedFake<TDependency>(string name) where TDependency : class
         {
-            return (TDependency)InjectedFakes
+            return (TDependency)_injectedFakes
                 .First(m => m.TypeThatHasBeenFaked == typeof(TDependency) && m.NameOfFakeInstance == name).Fake;
         }
 
@@ -111,7 +107,7 @@ namespace CoolTestStuff.Faker
         {
             var fakeInstance = Substitute.For(new[] { param.ParameterType }, Array.Empty<object>());
 
-            InjectedFakes.Add(
+            _injectedFakes.Add(
                 new FakedObject(param.ParameterType, param.Name, fakeInstance));
             
             return fakeInstance;
@@ -136,13 +132,13 @@ namespace CoolTestStuff.Faker
 
         private static ConstructorInfo? GetMostSpecialisedConstructor()
         {
-            var allCtors = typeof(T).GetConstructors();
+            var allConstructors = typeof(T).GetConstructors();
 
-            if (allCtors.Length == 0)
+            if (allConstructors.Length == 0)
                 return null;
 
-            var maxParams = allCtors.Max(ctor => ctor.GetParameters().Length);
-            return allCtors.Single(ctor => ctor.GetParameters().Length == maxParams);
+            var maxParams = allConstructors.Max(ctor => ctor.GetParameters().Length);
+            return allConstructors.Single(ctor => ctor.GetParameters().Length == maxParams);
         }
 
         private static object? GetDefault(Type type)
