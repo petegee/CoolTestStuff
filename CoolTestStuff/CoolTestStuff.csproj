@@ -1,23 +1,22 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <Authors>PeteGee</Authors>
     <Company>Deft NZ</Company>
     <Description>Simple full-featured automocking framework</Description>
-    <PackageLicenseUrl>https://github.com/petegee/CoolTestStuff/blob/master/LICENSE</PackageLicenseUrl>
     <Copyright>MIT Licence</Copyright>
     <PackageProjectUrl>https://github.com/petegee/CoolTestStuff</PackageProjectUrl>
-    <PackageIconUrl>https://avatars3.githubusercontent.com/u/13580047?s=400&amp;u=2b1de0a4dacb4633fd4b0d897f3919b0a451249b&amp;v=4</PackageIconUrl>
     <RepositoryUrl>https://github.com/petegee/CoolTestStuff</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
     <PackageId>PeteGee_CoolTestStuff</PackageId>
     <PackageTags>testing, unit test, mock, nsubstitute, moq, xunit, nunit, automock, automocking container, mocking, auto</PackageTags>
-    <Version>1.0.1</Version>
+    <Version>6.0.0</Version>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="NSubstitute" Version="3.1.0" />
+    <PackageReference Include="NSubstitute" Version="4.3.0" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />

@@ -1,4 +1,5 @@
 ﻿using CoolTestStuff;
+using CoolTestStuff.Faker;
 using DummyProject;
 using FluentAssertions;
 using NSubstitute;

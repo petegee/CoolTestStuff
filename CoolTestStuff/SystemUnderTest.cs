@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using CoolTestStuff.Faker;
 
 namespace CoolTestStuff
 {
@@ -12,27 +13,27 @@ namespace CoolTestStuff
     public class SystemUnderTest<TSut>
         where TSut : class
     {
-        private readonly List<KeyValuePair<string, object>> specifiedDependencies;
-        private readonly Lazy<TSut> targetFake;
-        private Faker<TSut> targetFaker;
+        private readonly List<SpecifiedInstance> _specifiedInstances;
+        private readonly Lazy<TSut> _targetFake;
+        private Faker<TSut> _targetFaker = new();
 
         /// <summary>
         /// Access to the actual SUT test-target
         /// </summary>
-        protected TSut Target => targetFake.Value;
+        protected TSut Target => _targetFake.Value;
 
         protected SystemUnderTest()
         {
-            specifiedDependencies = new List<KeyValuePair<string, object>>();
+            _specifiedInstances = new List<SpecifiedInstance>();
 
             // We build the targetFake class as late as possible to all people to use
             // the InjectTargetWith() method to provide custom instances.
-            targetFake = new Lazy<TSut>(
+            _targetFake = new Lazy<TSut>(
                 () =>
                 {
                     // lazily build the SUT/Fake...
-                    targetFaker = new Faker<TSut>(specifiedDependencies);
-                    return targetFaker.Fake;
+                    _targetFaker = new Faker<TSut>(_specifiedInstances);
+                    return _targetFaker.Fake;
                 });
         }
 
@@ -44,7 +45,7 @@ namespace CoolTestStuff
         {
             ForceCreationOfLazySystemUnderTest();
 
-            return targetFaker.GetInjectedFake<TDependency>();
+            return _targetFaker.GetInjectedFake<TDependency>();
         }
 
         /// <summary>
@@ -56,7 +57,7 @@ namespace CoolTestStuff
         {
             ForceCreationOfLazySystemUnderTest();
 
-            return targetFaker.GetInjectedFake<TDependency>(name);
+            return _targetFaker.GetInjectedFake<TDependency>(name);
         }
 
         /// <summary>
@@ -66,7 +67,7 @@ namespace CoolTestStuff
         /// </summary>
         protected void InjectTargetWith<T>(T instance) where T : class
         {
-            specifiedDependencies.Add(new KeyValuePair<string, object>(null, instance));
+            _specifiedInstances.Add(new SpecifiedInstance(instance, null));
         }
 
         /// <summary>
@@ -78,7 +79,7 @@ namespace CoolTestStuff
         /// </summary>
         protected void InjectTargetWith<T>(T instance, string ctorParameterName) where T : class
         {
-            specifiedDependencies.Add(new KeyValuePair<string, object>(ctorParameterName, instance));
+            _specifiedInstances.Add(new SpecifiedInstance(instance, ctorParameterName));
         }
 
         /// <summary>
@@ -86,13 +87,13 @@ namespace CoolTestStuff
         /// </summary>
         protected void ClearAllRegisteredInstances()
         {
-            specifiedDependencies.Clear();
+            _specifiedInstances.Clear();
         }
 
         private void ForceCreationOfLazySystemUnderTest()
         {
             // this forces the creation of the Lazy SUT to happen now.
-            var iexistOnlyToForceTheCreationOfTheSystemUnderTest = targetFake.Value;
+            var iexistOnlyToForceTheCreationOfTheSystemUnderTest = _targetFake.Value;
         }
     }
 }
